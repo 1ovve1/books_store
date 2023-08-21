@@ -13,6 +13,11 @@ cp ./config/db.php ./config/db-local.php
 nano ./config/db-local.php
 ```
 
+* install composer dependencies:
+```bash
+composer install 
+```
+
 * run migrations:
 ```bash 
 ./yii migrate
