@@ -39,7 +39,7 @@ class CatalogController extends Controller
 
         $books = $this->resolveSortBy($books, $sortBy, $sortType);
 
-        $pages = new Pagination(['totalCount' => $books->count(), 'pageSize' => 2]);
+        $pages = new Pagination(['totalCount' => $books->count()]);
 
         $books = $books->offset($pages->offset)
             ->limit($pages->limit)
