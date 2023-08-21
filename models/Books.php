@@ -3,6 +3,7 @@
 namespace app\models;
 
 use Yii;
+use yii\db\ActiveQuery;
 
 /**
  * This is the model class for table "books".
@@ -34,9 +35,11 @@ class Books extends \yii\db\ActiveRecord
     {
         return [
             [['author_id'], 'integer'],
+            [['image_path'], 'file', 'extensions' => 'png, jpg'],
             [['description'], 'string'],
             [['date'], 'safe'],
             [['title'], 'string', 'max' => 255],
+            [['isbn'], 'string', 'max' => 255],
             [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => Authors::class, 'targetAttribute' => ['author_id' => 'id']],
             [['genres'], 'safe']
         ];
@@ -50,11 +53,29 @@ class Books extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'author_id' => 'Author ID',
+            'image_path' => 'Book image',
+            'isbn' => 'ISBN',
             'title' => 'Title',
             'description' => 'Description',
             'date' => 'Date',
             'genres' => 'Genres'
         ];
+    }
+
+
+    /**
+     * Image saver accessor
+     *
+     * @param $value
+     * @return void
+     */
+    public function setImagePath($value)
+    {
+        if ($value) {
+            $path =  'upload/' . $value->baseName . '.' . $value->extension;
+            $value->saveAs($path);
+            $this->image_path = '/' . $path;
+        }
     }
 
     /**
@@ -93,7 +114,7 @@ class Books extends \yii\db\ActiveRecord
         }
 
         if (empty($clearGenres)) {
-            return 'Без жанра';
+            return 'Without genre';
         } else {
             return implode(', ', $clearGenres);
         }
@@ -128,14 +149,23 @@ class Books extends \yii\db\ActiveRecord
     }
 
     /**
-     * Date formatter
+     * WARNING high-level assembler bellow
      *
-     * @param $value
-     * @return void
+     * @param $genre
+     * @param $author
+     * @return ActiveQuery \yii\db\ActiveQuery
      */
-    public function setDate($value)
+    static function filterBooksByGenreAndAuthor($genre, $author)
     {
-        $this->data = \DateTime::createFromFormat("Y-m-d", $value)->format("Y-m-d");
+        $authorNameParts = explode(' ', $author);
+        $books = Books::find()
+            ->joinWith(['booksGenres.genre', 'author'])
+            ->filterWhere(['like', 'genres.value', $genre])
+            ->andFilterWhere(['like', 'authors.first_name', $authorNameParts[0] ?? ''])
+            ->andFilterWhere(['like', 'authors.last_name', $authorNameParts[1] ?? ''])
+            ->andFilterWhere(['like', 'authors.patronymic', $authorNameParts[2] ?? '']);
+
+        return $books;
     }
 
 }

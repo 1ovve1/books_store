@@ -11,9 +11,13 @@ use yii\widgets\ActiveForm;
 
 <div class="books-form">
 
-    <?php $form = ActiveForm::begin(); ?>
+    <?php $form = ActiveForm::begin(['options' => ['enctype' => 'multipart/form-data']]); ?>
 
     <?= $form->field($model, 'author_id')->textInput() ?>
+
+    <?= $form->field($model, 'image_path')->fileInput() ?>
+
+    <?= $form->field($model, 'isbn')->textInput() ?>
 
     <?= $form->field($model, 'title')->textInput(['maxlength' => true]) ?>
 

@@ -39,7 +39,7 @@ class Genres extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'value' => 'Genres',
+            'value' => 'Genre',
         ];
     }
 

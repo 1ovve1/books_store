@@ -4,6 +4,9 @@ namespace app\controllers;
 
 use app\models\Books;
 use yii\data\ActiveDataProvider;
+use yii\data\Pagination;
+use yii\db\ActiveQuery;
+use yii\helpers\Url;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
@@ -13,28 +16,45 @@ use yii\filters\VerbFilter;
  */
 class CatalogController extends Controller
 {
+    const SORTS = [
+        'date' => 'By date',
+        'title' => 'By title'
+    ];
 
     /**
      * Lists all Books models.
      *
+     * @param mixed $sortBy
+     * @param mixed $sortType
+     * @param string $genre
+     * @param string $author
      * @return string
      */
-    public function actionIndex()
+    public function actionIndex($sortBy = 'date',
+                                $sortType = SORT_ASC,
+                                $genre = '',
+                                $author = '')
     {
-        $dataProvider = new ActiveDataProvider([
-            'query' => Books::find(),
-            'pagination' => [
-                'pageSize' => 50
-            ],
-            'sort' => [
-                'defaultOrder' => [
-                    'id' => SORT_DESC,
-                ]
-            ],
-        ]);
+        $books = Books::filterBooksByGenreAndAuthor($genre, $author);
+
+        $books = $this->resolveSortBy($books, $sortBy, $sortType);
+
+        $pages = new Pagination(['totalCount' => $books->count(), 'pageSize' => 2]);
+
+        $books = $books->offset($pages->offset)
+            ->limit($pages->limit)
+            ->all();
+
+        $sortLinks = $this->generateSortLinks($sortBy, $sortType);
 
         return $this->render('index', [
-            'dataProvider' => $dataProvider,
+            'books' => $books,
+            'pages' => $pages,
+            'sortLinks' => $sortLinks,
+            'filters' => [
+                'genre' => $genre,
+                'author' => $author,
+            ]
         ]);
     }
 
@@ -44,68 +64,30 @@ class CatalogController extends Controller
      * @return string
      * @throws NotFoundHttpException if the model cannot be found
      */
-    public function actionView($id)
+    public function actionBook($id)
     {
-        return $this->render('view', [
-            'model' => $this->findModel($id),
+        return $this->render('book', [
+            'book' => $this->findModel($id),
         ]);
     }
 
     /**
-     * Creates a new Books model.
-     * If creation is successful, the browser will be redirected to the 'view' page.
-     * @return string|\yii\web\Response
+     * Return books collection with sortBy resolving
+     *
+     * @param $query
+     * @param $sortBy
+     * @param $sortType
+     * @return ActiveQuery
      */
-    public function actionCreate()
-    {
-        $model = new Books();
-
-        if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
-        } else {
-            $model->loadDefaultValues();
-        }
-
-        return $this->render('create', [
-            'model' => $model,
-        ]);
+    protected function resolveSortBy($query, $sortBy, $sortType) {
+        return match($sortBy) {
+            'date' => $query->orderBy(['date' => (int)$sortType]),
+            'title' => $query->orderBy(['title' => (int)$sortType]),
+            default => $query,
+        };
     }
 
-    /**
-     * Updates an existing Books model.
-     * If update is successful, the browser will be redirected to the 'view' page.
-     * @param int $id ID
-     * @return string|\yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    public function actionUpdate($id)
-    {
-        $model = $this->findModel($id);
 
-        if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
-        }
-
-        return $this->render('update', [
-            'model' => $model,
-        ]);
-    }
-
-    /**
-     * Deletes an existing Books model.
-     * If deletion is successful, the browser will be redirected to the 'index' page.
-     * @param int $id ID
-     * @return \yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
-     */
-    public function actionDelete($id)
-    {
-        $this->findModel($id)->delete();
-
-        return $this->redirect(['index']);
-    }
 
     /**
      * Finds the Books model based on its primary key value.
@@ -121,5 +103,47 @@ class CatalogController extends Controller
         }
 
         throw new NotFoundHttpException('The requested page does not exist.');
+    }
+
+    /**
+     * @param $sortBy
+     * @param $sortType
+     * @return array<array{
+     *     title: string,
+     *     link: string,
+     *     active: bool,
+     *     type: int,
+     * }>
+     */
+    protected function generateSortLinks($sortBy, $sortType)
+    {
+        $sortLinks = [];
+
+        foreach (self::SORTS as $sort => $title) {
+            $linkItem = [ 'title' => $title ];
+
+
+            if ($sort === $sortBy) {
+                $linkItem['active'] = true;
+
+                if ((int)$sortType === SORT_ASC) {
+                    $linkItem['type'] = SORT_DESC;
+                    $linkItem['link'] = Url::current(['sortBy' => $sort, 'sortType' => SORT_DESC]);
+                } else {
+                    $linkItem['type'] = SORT_ASC;
+                    $linkItem['link'] = Url::current(['sortBy' => $sort, 'sortType' => SORT_ASC]);
+
+                }
+
+            } else {
+                $linkItem['active'] = false;
+                $linkItem['link'] = Url::current(['sortBy' => $sort]);
+                $linkItem['type'] = SORT_ASC;
+            }
+
+            $sortLinks[] = $linkItem;
+        }
+
+        return $sortLinks;
     }
 }

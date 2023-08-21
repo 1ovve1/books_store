@@ -8,6 +8,7 @@ use yii\data\ActiveDataProvider;
 use yii\filters\VerbFilter;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
+use yii\web\UploadedFile;
 
 /**
  * BooksController implements the CRUD actions for Books model.
@@ -41,7 +42,6 @@ class BooksController extends Controller
     {
         $dataProvider = new ActiveDataProvider([
             'query' => Books::find(),
-            /*
             'pagination' => [
                 'pageSize' => 50
             ],
@@ -50,7 +50,6 @@ class BooksController extends Controller
                     'id' => SORT_DESC,
                 ]
             ],
-            */
         ]);
 
         return $this->render('index', [
@@ -107,7 +106,10 @@ class BooksController extends Controller
     {
         $model = $this->findModel($id);
 
-        if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
+        if ($this->request->isPost ) {
+            $model->load($this->request->post());
+            $model->setImagePath(UploadedFile::getInstance($model, 'image_path'));
+            $model->save();
             return $this->redirect(['view', 'id' => $model->id]);
         }
 

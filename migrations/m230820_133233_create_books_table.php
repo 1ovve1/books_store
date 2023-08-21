@@ -16,9 +16,11 @@ class m230820_133233_create_books_table extends Migration
             'id' => $this->primaryKey(),
             'author_id' => $this->integer(),
 
+            'isbn' => $this->string(),
             'title' => $this->string(),
             'description' => $this->text(),
             'date' => $this->date(),
+            'image_path' => $this->string()->defaultValue('/uploads/default.jpg'),
 
             'created_at' => $this->timestamp()->null()->defaultExpression('CURRENT_TIMESTAMP'),
             'updated_at' => $this->timestamp()->defaultValue(null)->append('ON UPDATE CURRENT_TIMESTAMP'),

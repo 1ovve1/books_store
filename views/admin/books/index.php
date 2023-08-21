@@ -28,6 +28,7 @@ $this->params['breadcrumbs'][] = $this->title;
 
             'id',
             'author_id',
+            'isbn',
             'title',
             'description:ntext',
             'date',

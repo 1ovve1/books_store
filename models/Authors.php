@@ -56,4 +56,15 @@ class Authors extends \yii\db\ActiveRecord
     {
         return $this->hasMany(Books::class, ['author_id' => 'id']);
     }
+
+    public function fullName()
+    {
+        $fullName = "{$this->first_name} {$this->last_name}";
+
+        if ($this->patronymic) {
+            return "{$fullName} {$this->patronymic}";
+        } else {
+            return $fullName;
+        }
+    }
 }
